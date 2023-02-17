@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:password_protector/common/colors.dart';
 import 'package:password_protector/common/utils.dart';
 import 'package:password_protector/screens/home_screen.dart';
 import 'package:password_protector/widgets/file_item.dart';
