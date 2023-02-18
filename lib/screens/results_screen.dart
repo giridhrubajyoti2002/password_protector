@@ -59,7 +59,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         await ExternalPath.getExternalStoragePublicDirectory(
             ExternalPath.DIRECTORY_DOWNLOADS);
     String appDirPath = '$downloadsDirPath/$applicationFolderName';
-    final status = await Permission.accessMediaLocation.request();
+    final status = await Permission.storage.request();
     if (status.isGranted) {
       try {
         String fileName = filePath.split('/').last;
@@ -228,122 +228,130 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               return const Loader();
             }
             filePaths = snapshot.data!;
-            return ListView.builder(
-              itemCount: filePaths.length,
-              itemBuilder: (context, index) {
-                String filePath = filePaths[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: FileItem(
-                    elevation: 0,
-                    filePath: filePath,
-                    savedFile: true,
-                    trailing: PopupMenuButton(
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 0,
-                          child: Row(
-                            children: [
-                              Text(filePath.endsWith('.aes')
-                                  ? 'Decrypt'
-                                  : 'Encrypt'),
-                              const SizedBox(width: 10),
-                              Icon(filePath.endsWith('.aes')
-                                  ? Icons.no_encryption
-                                  : Icons.enhanced_encryption),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 1,
-                          child: Row(
-                            children: const [
-                              Text('Save to phone'),
-                              SizedBox(width: 10),
-                              Icon(Icons.download),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 2,
-                          child: Row(
-                            children: const [
-                              Text('Share'),
-                              SizedBox(width: 10),
-                              Icon(Icons.share),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 3,
-                          child: Row(
-                            children: const [
-                              Text('Delete'),
-                              SizedBox(width: 10),
-                              Icon(Icons.delete),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onSelected: (value) async {
-                        switch (value) {
-                          case 0:
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              HomeScreen.routeName,
-                              (route) => false,
-                              arguments: {
-                                'tabIndex': filePath.endsWith('.aes') ? 1 : 0,
-                                'filePath': filePath,
-                              },
-                            );
-                            break;
-                          case 1:
-                            saveToPhone(context, filePath);
-                            break;
-                          case 2:
-                            Share.shareXFiles([XFile(filePath)]);
-                            break;
-                          case 3:
-                            showAlertDialog(
-                              context: context,
-                              title: 'Are you sure ?',
-                              content: 'This will delete the file.',
-                              actions: [
-                                TextButton(
-                                  child: const Text(
-                                    'Cancel',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                TextButton(
-                                  child: const Text(
-                                    'Ok',
-                                    style: TextStyle(
-                                        color: Colors.red, fontSize: 16),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-
-                                    if (deleteFile(context, filePath)) {
-                                      setState(() {
-                                        filePaths.removeAt(index);
-                                      });
-                                    }
-                                  },
-                                ),
-                              ],
-                            );
-                            break;
-                        }
-                      },
+            return filePaths.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No files available.',
+                      style: TextStyle(fontSize: 20),
                     ),
-                  ),
-                );
-              },
-            );
+                  )
+                : ListView.builder(
+                    itemCount: filePaths.length,
+                    itemBuilder: (context, index) {
+                      String filePath = filePaths[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: FileItem(
+                          elevation: 0,
+                          filePath: filePath,
+                          savedFile: true,
+                          trailing: PopupMenuButton(
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 0,
+                                child: Row(
+                                  children: [
+                                    Text(filePath.endsWith('.aes')
+                                        ? 'Decrypt'
+                                        : 'Encrypt'),
+                                    const SizedBox(width: 10),
+                                    Icon(filePath.endsWith('.aes')
+                                        ? Icons.no_encryption
+                                        : Icons.enhanced_encryption),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 1,
+                                child: Row(
+                                  children: const [
+                                    Text('Save to phone'),
+                                    SizedBox(width: 10),
+                                    Icon(Icons.download),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 2,
+                                child: Row(
+                                  children: const [
+                                    Text('Share'),
+                                    SizedBox(width: 10),
+                                    Icon(Icons.share),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 3,
+                                child: Row(
+                                  children: const [
+                                    Text('Delete'),
+                                    SizedBox(width: 10),
+                                    Icon(Icons.delete),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onSelected: (value) async {
+                              switch (value) {
+                                case 0:
+                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                    HomeScreen.routeName,
+                                    (route) => false,
+                                    arguments: {
+                                      'tabIndex':
+                                          filePath.endsWith('.aes') ? 1 : 0,
+                                      'filePath': filePath,
+                                    },
+                                  );
+                                  break;
+                                case 1:
+                                  saveToPhone(context, filePath);
+                                  break;
+                                case 2:
+                                  Share.shareXFiles([XFile(filePath)]);
+                                  break;
+                                case 3:
+                                  showAlertDialog(
+                                    context: context,
+                                    title: 'Are you sure ?',
+                                    content: 'This will delete the file.',
+                                    actions: [
+                                      TextButton(
+                                        child: const Text(
+                                          'Cancel',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: const Text(
+                                          'Ok',
+                                          style: TextStyle(
+                                              color: Colors.red, fontSize: 16),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+
+                                          if (deleteFile(context, filePath)) {
+                                            setState(() {
+                                              filePaths.removeAt(index);
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                  break;
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
           },
         ),
       ),

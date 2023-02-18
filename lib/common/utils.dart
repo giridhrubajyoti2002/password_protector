@@ -14,6 +14,7 @@ void showSnackBar({
   required BuildContext context,
   required String content,
 }) {
+  ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
@@ -46,31 +47,31 @@ void showAlertDialog({
   );
 }
 
-void showCircularProgressIndicator(BuildContext context) {
-  showDialog(
+Future showCircularProgressIndicator(
+  BuildContext context,
+) {
+  final result = showDialog(
     context: context,
     builder: (context) {
-      return const Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 3,
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     },
   );
+  return result;
 }
 
 void hideCircularProgressIndicator(BuildContext context) {
   Navigator.of(context).pop();
 }
 
-Future<String?> pickFiles(BuildContext context) async {
-  String? zipFilePath;
-  FilePickerResult? pickedFiles =
-      await FilePicker.platform.pickFiles(allowMultiple: true);
+Future<String> pickFiles(BuildContext context) async {
+  String zipFilePath = '';
+  FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+    allowMultiple: true,
+  );
   if (pickedFiles != null) {
     Directory cacheDir = await getTemporaryDirectory();
     final encoder = ZipFileEncoder();
-    final time = DateFormat('dd-MM-yyyy_HH:mm:ss').format(DateTime.now());
+    final time = DateFormat('dd-MM-yyyy_HH-mm-ss').format(DateTime.now());
     String fileName = pickedFiles.files.length == 1
         ? "${pickedFiles.files[0].name.split('.').first}.zip"
         : '$time.zip';

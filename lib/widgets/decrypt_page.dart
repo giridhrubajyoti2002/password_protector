@@ -44,10 +44,17 @@ class _DecryptPageState extends State<DecryptPage>
   void selectFile() async {
     var status = await Permission.storage.request();
     if (status.isGranted) {
+      showAlertDialog(
+        context: context,
+        title: 'Please wait',
+        content: 'Please wait while the file/files is being loaded...',
+        actions: [],
+      );
       final filePath = await pickProtectedFile(context);
+      Navigator.of(context).pop();
       if (filePath != null) {
+        protectedFilePath = filePath;
         setState(() {
-          protectedFilePath = filePath;
           _isFileSelected = true;
         });
       }

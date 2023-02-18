@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:password_protector/common/encrypt_data.dart';
 import 'package:password_protector/common/utils.dart';
-import 'package:password_protector/widgets/loader.dart';
 import 'package:password_protector/widgets/select_file_button.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -22,7 +21,6 @@ class _EncryptPageState extends State<EncryptPage>
     with TickerProviderStateMixin {
   bool _isFileSelected = false;
   bool _isPasswordVisible = false;
-  bool _isFileLoading = false;
   late String zipFilePath;
   late TextEditingController _textController;
   final _formKey = GlobalKey<FormState>();
@@ -43,24 +41,37 @@ class _EncryptPageState extends State<EncryptPage>
     _textController.dispose();
   }
 
-  void selectFile() async {
+  Future<String> selectFile() async {
     var status = await Permission.storage.request();
+    String filePath = '';
     if (status.isGranted) {
-      showCircularProgressIndicator(context);
+      showAlertDialog(
+        context: context,
+        title: 'Please wait',
+        content: 'Please wait while the file/files is being loaded...',
+        actions: [],
+      );
       final filePath = await pickFiles(context);
-      if (filePath != null) {
+      if (filePath.isNotEmpty) {
+        zipFilePath = filePath;
         setState(() {
-          zipFilePath = filePath;
           _isFileSelected = true;
         });
       }
-      hideCircularProgressIndicator(context);
+      Navigator.of(context).pop();
     } else if (status.isPermanentlyDenied) {
       showSnackBar(
           context: context, content: "Please provide storage permission");
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
       openAppSettings();
     }
+    if (filePath.isNotEmpty) {
+      zipFilePath = filePath;
+      setState(() {
+        _isFileSelected = true;
+      });
+    }
+    return filePath;
   }
 
   void encryptFile() async {
@@ -68,10 +79,12 @@ class _EncryptPageState extends State<EncryptPage>
       String? encFilePath = await EncryptData.encryptFile(
           context, zipFilePath, _textController.text.trim());
       if (encFilePath != null) {
-        setState(() {
-          _textController.text = '';
-          _isFileSelected = false;
-        });
+        setState(
+          () {
+            _textController.text = '';
+            _isFileSelected = false;
+          },
+        );
       }
     }
   }
@@ -94,15 +107,15 @@ class _EncryptPageState extends State<EncryptPage>
                       ),
                       onPressed: () {
                         zipFilePath = '';
-                        setState(() {
-                          _isFileSelected = false;
-                        });
+                        setState(
+                          () {
+                            _isFileSelected = false;
+                          },
+                        );
                       },
                     ),
                   )
-                : _isFileLoading
-                    ? const Loader()
-                    : SelectFileButton(onPressed: selectFile),
+                : SelectFileButton(onPressed: selectFile),
             const SizedBox(
               height: 100,
             ),

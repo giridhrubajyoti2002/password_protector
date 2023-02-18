@@ -79,15 +79,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               fontSize: 16,
             ),
             tabs: const [
-              Text(
-                'Encrypt',
-                style: TextStyle(
-                  fontSize: 18,
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 5),
+                child: Text(
+                  'Encrypt',
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
                 ),
               ),
-              Text(
-                'Decrypt',
-                style: TextStyle(fontSize: 18),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 5),
+                child: Text(
+                  'Decrypt',
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
             ],
             onTap: (value) {
