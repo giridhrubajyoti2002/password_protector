@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:password_protector/common/encrypt_data.dart';
 import 'package:password_protector/common/utils.dart';
+import 'package:password_protector/main.dart';
+import 'package:password_protector/screens/results_screen.dart';
 import 'package:password_protector/widgets/select_file_button.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -22,7 +24,7 @@ class _DecryptPageState extends State<DecryptPage>
   bool _isFileSelected = false;
   bool _isPasswordVisible = false;
   late String protectedFilePath;
-  late TextEditingController textController;
+  late TextEditingController _textController;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -32,26 +34,19 @@ class _DecryptPageState extends State<DecryptPage>
     if (protectedFilePath.isNotEmpty) {
       _isFileSelected = true;
     }
-    textController = TextEditingController();
+    _textController = TextEditingController();
   }
 
   @override
   void dispose() async {
     super.dispose();
-    textController.dispose();
+    _textController.dispose();
   }
 
   void selectFile() async {
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      showAlertDialog(
-        context: context,
-        title: 'Please wait',
-        content: 'Please wait while the file/files is being loaded...',
-        actions: [],
-      );
       final filePath = await pickProtectedFile(context);
-      Navigator.of(context).pop();
       if (filePath != null) {
         protectedFilePath = filePath;
         setState(() {
@@ -68,13 +63,39 @@ class _DecryptPageState extends State<DecryptPage>
 
   void decryptFile() async {
     if (_formKey.currentState!.validate()) {
-      String? decFilePath = await EncryptData.decryptFile(
-          context, protectedFilePath, textController.text.trim());
-      if (decFilePath != null) {
+      showSnackBar(context: context, content: 'Decrypting...');
+      String decFilePath = '';
+      isolates.kill('decrypt');
+      isolates.spawn(
+        EncryptData.decryptFile,
+        name: 'decrypt',
+        onReceive: (String filePath) {
+          decFilePath = filePath;
+          isolates.kill('decrypt');
+        },
+        onInitialized: () {
+          isolates.send({
+            'srcFilePath': protectedFilePath,
+            'password': _textController.text.trim(),
+          }, to: 'decrypt');
+        },
+      );
+      showCircularProgressIndicator(context);
+      while (isolates.isolates.containsKey('decrypt')) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      hideCircularProgressIndicator(context);
+      if (decFilePath.isNotEmpty) {
+        showSnackBar(
+            context: context, content: 'Decryption completed successfully.');
         setState(() {
-          textController.text = '';
+          _textController.text = '';
           _isFileSelected = false;
         });
+        Navigator.of(context).pushNamed(ResultsScreen.routeName);
+      } else {
+        showSnackBar(
+            context: context, content: "Incorrect password or corrupted file.");
       }
     }
   }
@@ -113,7 +134,7 @@ class _DecryptPageState extends State<DecryptPage>
                       Form(
                         key: _formKey,
                         child: TextFormField(
-                          controller: textController,
+                          controller: _textController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(

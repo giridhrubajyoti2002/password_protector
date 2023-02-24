@@ -1,12 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:password_protector/common/encrypt_data.dart';
 import 'package:password_protector/common/utils.dart';
+import 'package:password_protector/main.dart';
+import 'package:password_protector/screens/results_screen.dart';
+import 'package:password_protector/widgets/file_item.dart';
 import 'package:password_protector/widgets/select_file_button.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import 'file_item.dart';
 
 class EncryptPage extends StatefulWidget {
   static const String routeName = '/encrypt-page';
@@ -41,49 +46,98 @@ class _EncryptPageState extends State<EncryptPage>
     _textController.dispose();
   }
 
-  Future<String> selectFile() async {
+  void selectFile() async {
     var status = await Permission.storage.request();
-    String filePath = '';
     if (status.isGranted) {
-      showAlertDialog(
-        context: context,
-        title: 'Please wait',
-        content: 'Please wait while the file/files is being loaded...',
-        actions: [],
-      );
-      final filePath = await pickFiles(context);
-      if (filePath.isNotEmpty) {
-        zipFilePath = filePath;
-        setState(() {
-          _isFileSelected = true;
-        });
-      }
-      Navigator.of(context).pop();
+      pickFiles();
     } else if (status.isPermanentlyDenied) {
       showSnackBar(
           context: context, content: "Please provide storage permission");
-      await Future.delayed(const Duration(seconds: 2));
       openAppSettings();
     }
-    if (filePath.isNotEmpty) {
-      zipFilePath = filePath;
+  }
+
+  void pickFiles() async {
+    FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+    );
+    if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
+      final filePaths = <String>[];
+      for (var file in pickedFiles.files) {
+        if (file.path != null) {
+          filePaths.add(file.path!);
+        }
+      }
+      Directory cacheDir = await getTemporaryDirectory();
+      final time = DateFormat('dd-MM-yyyy_HH-mm-ss').format(DateTime.now());
+      String fileName = filePaths.length == 1
+          ? "${filePaths[0].split('/').last.split('.').first}.zip"
+          : '$time.zip';
+      String zipPath = '${cacheDir.path}/$fileName';
+      isolates.kill('createZip');
+      isolates.spawn(
+        compressToZipFile,
+        name: 'createZip',
+        onReceive: (String zipPath) {
+          zipFilePath = zipPath;
+          isolates.kill('createZip');
+        },
+        onInitialized: () {
+          isolates.send({'filePaths': filePaths, 'zipPath': zipPath},
+              to: 'createZip');
+        },
+      );
+    } else {
+      showSnackBar(context: context, content: 'No files selected.');
+    }
+    showCircularProgressIndicator(context);
+    while (isolates.isolates.containsKey('createZip')) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    hideCircularProgressIndicator(context);
+    if (zipFilePath.isNotEmpty) {
       setState(() {
         _isFileSelected = true;
       });
     }
-    return filePath;
   }
 
   void encryptFile() async {
     if (_formKey.currentState!.validate()) {
-      String? encFilePath = await EncryptData.encryptFile(
-          context, zipFilePath, _textController.text.trim());
-      if (encFilePath != null) {
-        setState(
-          () {
-            _textController.text = '';
-            _isFileSelected = false;
-          },
+      showSnackBar(context: context, content: 'Encrypting...');
+      String encFilePath = '';
+      isolates.kill('encrypt');
+      isolates.spawn(
+        EncryptData.encryptFile,
+        name: 'encrypt',
+        onReceive: (String filePath) {
+          encFilePath = filePath;
+          isolates.kill('encrypt');
+        },
+        onInitialized: () {
+          isolates.send({
+            'srcFilePath': zipFilePath,
+            'password': _textController.text.trim(),
+          }, to: 'encrypt');
+        },
+      );
+      showCircularProgressIndicator(context);
+      while (isolates.isolates.containsKey('encrypt')) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      hideCircularProgressIndicator(context);
+      if (encFilePath.isNotEmpty) {
+        showSnackBar(
+            context: context, content: 'Encryption completed successfully.');
+        setState(() {
+          _textController.text = '';
+          _isFileSelected = false;
+        });
+        Navigator.of(context).pushNamed(ResultsScreen.routeName);
+      } else {
+        showSnackBar(
+          context: context,
+          content: "Something wrong happened. Please try again",
         );
       }
     }

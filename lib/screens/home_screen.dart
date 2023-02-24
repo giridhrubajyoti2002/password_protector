@@ -5,7 +5,6 @@ import 'package:password_protector/screens/results_screen.dart';
 import 'package:password_protector/widgets/decrypt_page.dart';
 import 'package:password_protector/widgets/encrypt_page.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:password_protector/common/colors.dart';
 
 // ignore: must_be_immutable
@@ -83,9 +82,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 padding: EdgeInsets.symmetric(vertical: 5),
                 child: Text(
                   'Encrypt',
-                  style: TextStyle(
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontSize: 18),
                 ),
               ),
               Padding(

@@ -1,12 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:isolate_handler/isolate_handler.dart';
 
 String applicationFolderName = 'Password_Protector';
 
@@ -27,13 +25,13 @@ void showSnackBar({
   );
 }
 
-void showAlertDialog({
+Future<dynamic> showAlertDialog({
   required BuildContext context,
   required String title,
   required String content,
   required List<Widget> actions,
-}) {
-  showDialog(
+}) async {
+  final result = showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
@@ -45,50 +43,35 @@ void showAlertDialog({
       );
     },
   );
+  return result;
 }
 
-Future showCircularProgressIndicator(
-  BuildContext context,
-) {
-  final result = showDialog(
+showCircularProgressIndicator(BuildContext context) {
+  showDialog(
     context: context,
     builder: (context) {
       return const Center(child: CircularProgressIndicator());
     },
   );
-  return result;
 }
 
 void hideCircularProgressIndicator(BuildContext context) {
   Navigator.of(context).pop();
 }
 
-Future<String> pickFiles(BuildContext context) async {
-  String zipFilePath = '';
-  FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
-    allowMultiple: true,
-  );
-  if (pickedFiles != null) {
-    Directory cacheDir = await getTemporaryDirectory();
+void compressToZipFile(Map<String, dynamic> context) {
+  final messenger = HandledIsolate.initialize(context);
+  messenger.listen((map) {
+    List<String> filePaths = map['filePaths'] as List<String>;
+    String zipPath = map['zipPath'] as String;
     final encoder = ZipFileEncoder();
-    final time = DateFormat('dd-MM-yyyy_HH-mm-ss').format(DateTime.now());
-    String fileName = pickedFiles.files.length == 1
-        ? "${pickedFiles.files[0].name.split('.').first}.zip"
-        : '$time.zip';
-    encoder.create('${cacheDir.path}/$fileName');
-    for (var file in pickedFiles.files) {
-      if (file.path != null) {
-        encoder.addFile(File(file.path!));
-      }
+    encoder.create(zipPath);
+    for (var path in filePaths) {
+      encoder.addFile(File(path));
     }
     encoder.close();
-    zipFilePath = encoder.zipPath;
-    // FilePicker.platform.clearTemporaryFiles();
-    // cacheDir.deleteSync(recursive: true);
-  } else {
-    showSnackBar(context: context, content: "No files selected");
-  }
-  return zipFilePath;
+    messenger.send(zipPath);
+  });
 }
 
 Future<String?> pickProtectedFile(BuildContext context) async {
