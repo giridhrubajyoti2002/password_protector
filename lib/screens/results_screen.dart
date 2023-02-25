@@ -22,13 +22,15 @@ class ResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _ResultsScreenState extends ConsumerState<ResultsScreen> {
-  Stream<List<String>> getProtectedFiles() async* {
+  Future<List<String>> getProtectedFiles() async {
     final filesDir = await getApplicationSupportDirectory();
     List<String> filePaths = [];
     for (var file in filesDir.listSync()) {
-      filePaths.add(file.path);
+      if (file.path.endsWith('.zip') || file.path.endsWith('.aes')) {
+        filePaths.add(file.path);
+      }
     }
-    yield filePaths;
+    return filePaths;
   }
 
   bool deleteFile(BuildContext context, String filePath) {
@@ -220,8 +222,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        child: StreamBuilder<List<String>>(
-          stream: getProtectedFiles(),
+        child: FutureBuilder<List<String>>(
+          future: getProtectedFiles(),
           initialData: const [],
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {

@@ -52,6 +52,7 @@ showCircularProgressIndicator(BuildContext context) {
     builder: (context) {
       return const Center(child: CircularProgressIndicator());
     },
+    barrierDismissible: false,
   );
 }
 

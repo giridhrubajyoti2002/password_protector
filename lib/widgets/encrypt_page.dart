@@ -105,26 +105,28 @@ class _EncryptPageState extends State<EncryptPage>
   void encryptFile() async {
     if (_formKey.currentState!.validate()) {
       showSnackBar(context: context, content: 'Encrypting...');
-      String encFilePath = '';
-      isolates.kill('encrypt');
-      isolates.spawn(
-        EncryptData.encryptFile,
-        name: 'encrypt',
-        onReceive: (String filePath) {
-          encFilePath = filePath;
-          isolates.kill('encrypt');
-        },
-        onInitialized: () {
-          isolates.send({
-            'srcFilePath': zipFilePath,
-            'password': _textController.text.trim(),
-          }, to: 'encrypt');
-        },
-      );
+      // isolates.kill('encrypt');
+      // isolates.spawn(
+      //   EncryptData.encryptFile,
+      //   name: 'encrypt',
+      //   onReceive: (String filePath) {
+      //     encFilePath = filePath;
+      //     isolates.kill('encrypt');
+      //   },
+      //   onInitialized: () {
+      //     isolates.send({
+      //       'srcFilePath': zipFilePath,
+      //       'password': _textController.text.trim(),
+      //     }, to: 'encrypt');
+      //   },
+      // );
       showCircularProgressIndicator(context);
-      while (isolates.isolates.containsKey('encrypt')) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
+
+      String encFilePath = await EncryptData.encryptFile(
+          zipFilePath, _textController.text.trim());
+      // while (isolates.isolates.containsKey('encrypt')) {
+      //   await Future.delayed(const Duration(milliseconds: 100));
+      // }
       hideCircularProgressIndicator(context);
       if (encFilePath.isNotEmpty) {
         showSnackBar(

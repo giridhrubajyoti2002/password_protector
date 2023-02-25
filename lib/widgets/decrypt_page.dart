@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:password_protector/common/encrypt_data.dart';
 import 'package:password_protector/common/utils.dart';
-import 'package:password_protector/main.dart';
 import 'package:password_protector/screens/results_screen.dart';
 import 'package:password_protector/widgets/select_file_button.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -64,26 +63,27 @@ class _DecryptPageState extends State<DecryptPage>
   void decryptFile() async {
     if (_formKey.currentState!.validate()) {
       showSnackBar(context: context, content: 'Decrypting...');
-      String decFilePath = '';
-      isolates.kill('decrypt');
-      isolates.spawn(
-        EncryptData.decryptFile,
-        name: 'decrypt',
-        onReceive: (String filePath) {
-          decFilePath = filePath;
-          isolates.kill('decrypt');
-        },
-        onInitialized: () {
-          isolates.send({
-            'srcFilePath': protectedFilePath,
-            'password': _textController.text.trim(),
-          }, to: 'decrypt');
-        },
-      );
+      // isolates.kill('decrypt');
+      // isolates.spawn(
+      //   EncryptData.decryptFile,
+      //   name: 'decrypt',
+      //   onReceive: (String filePath) {
+      //     decFilePath = filePath;
+      //     isolates.kill('decrypt');
+      //   },
+      //   onInitialized: () {
+      //     isolates.send({
+      //       'srcFilePath': protectedFilePath,
+      //       'password': _textController.text.trim(),
+      //     }, to: 'decrypt');
+      //   },
+      // );
       showCircularProgressIndicator(context);
-      while (isolates.isolates.containsKey('decrypt')) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
+      String decFilePath = await EncryptData.decryptFile(
+          protectedFilePath, _textController.text.trim());
+      // while (isolates.isolates.containsKey('decrypt')) {
+      //   await Future.delayed(const Duration(milliseconds: 100));
+      // }
       hideCircularProgressIndicator(context);
       if (decFilePath.isNotEmpty) {
         showSnackBar(
