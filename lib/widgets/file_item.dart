@@ -1,24 +1,25 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
-
 import 'package:password_protector/common/colors.dart';
 
 // ignore: must_be_immutable
 class FileItem extends StatelessWidget {
   String filePath;
   final Widget trailing;
-  bool savedFile;
+  bool isSavedFile;
   double elevation;
+  late bool isEncrypted;
   FileItem({
-    Key? key,
+    super.key,
     required this.filePath,
     required this.trailing,
     this.elevation = 5,
-    this.savedFile = false,
-  }) : super(key: key);
+    this.isSavedFile = false,
+  }) {
+    isEncrypted = filePath.endsWith('.aes');
+  }
 
   String getFileSize(int decimals) {
     File file = File(filePath);
@@ -46,16 +47,22 @@ class FileItem extends StatelessWidget {
       ),
       child: ListTile(
           contentPadding: const EdgeInsets.only(left: 15, right: 5),
-          leading: const Icon(
-            Icons.folder_zip,
-            color: primaryColor,
-            size: 32,
-          ),
+          leading: isEncrypted
+              ? const ImageIcon(
+                  AssetImage('assets/icons/encrypted_file_icon.png'),
+                  color: primaryColor,
+                  size: 32,
+                )
+              : const Icon(
+                  Icons.folder_zip,
+                  color: primaryColor,
+                  size: 32,
+                ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (savedFile)
-                fileName.endsWith('.aes')
+              if (isSavedFile)
+                isEncrypted
                     ? const Text(
                         'encrypted',
                         style: TextStyle(

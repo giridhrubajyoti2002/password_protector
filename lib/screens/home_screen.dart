@@ -54,7 +54,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 0,
-                  child: Text('Results'),
+                  child: Text(
+                    ' Results',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
+                  ),
                 ),
               ],
               onSelected: (value) {

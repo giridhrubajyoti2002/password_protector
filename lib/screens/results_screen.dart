@@ -246,7 +246,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                         child: FileItem(
                           elevation: 0,
                           filePath: filePath,
-                          savedFile: true,
+                          isSavedFile: true,
                           trailing: PopupMenuButton(
                             itemBuilder: (context) => [
                               PopupMenuItem(

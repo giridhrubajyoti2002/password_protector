@@ -21,7 +21,7 @@ class SelectFileButton extends StatelessWidget {
       ),
       child: const ListTile(
         leading: ImageIcon(
-          AssetImage('assets/icons/file.png'),
+          AssetImage('assets/icons/file_icon.png'),
           color: primaryColor,
           size: 28,
         ),
